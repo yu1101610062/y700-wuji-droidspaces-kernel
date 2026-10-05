@@ -1,0 +1,66 @@
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 94213abde..9ad0e0a23 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -885,6 +885,24 @@ struct task_struct {
+ 	int				normal_prio;
+ 	unsigned int			rt_priority;
+ 
++#if defined(CONFIG_SYSVIPC) && !defined(__BINDGEN__)
++	/*
++	 * Droidspaces: SYSVIPC state lives in the 28-byte alignment hole
++	 * between rt_priority (ends @164) and the cacheline-aligned se (@192),
++	 * so no stock task_struct member moves. __kabi_ignored keeps
++	 * gendwarfksyms CRCs unchanged; hidden from bindgen so the stock
++	 * rust_binder.ko Rust KMI is preserved too.
++	 */
++	union {
++		char __kabi_ignored_0;
++		struct sysv_sem			sysvsem;
++	} __packed;
++	union {
++		char __kabi_ignored_1;
++		struct sysv_shm			sysvshm;
++	} __packed;
++#endif
++
+ 	struct sched_entity		se;
+ 	struct sched_rt_entity		rt;
+ 	struct sched_dl_entity		dl;
+@@ -1191,10 +1209,6 @@ struct task_struct {
+ 
+ 	struct nameidata		*nameidata;
+ 
+-#ifdef CONFIG_SYSVIPC
+-	struct sysv_sem			sysvsem;
+-	struct sysv_shm			sysvshm;
+-#endif
+ #ifdef CONFIG_DETECT_HUNG_TASK
+ 	unsigned long			last_switch_count;
+ 	unsigned long			last_switch_time;
+diff --git a/include/linux/sem_types.h b/include/linux/sem_types.h
+index 73df1971a..9f01fb647 100644
+--- a/include/linux/sem_types.h
++++ b/include/linux/sem_types.h
+@@ -5,7 +5,7 @@
+ struct sem_undo_list;
+ 
+ struct sysv_sem {
+-#ifdef CONFIG_SYSVIPC
++#if defined(CONFIG_SYSVIPC) && !defined(__BINDGEN__)
+ 	struct sem_undo_list *undo_list;
+ #endif
+ };
+diff --git a/include/linux/shm.h b/include/linux/shm.h
+index 1d3d3ae95..270ceb12f 100644
+--- a/include/linux/shm.h
++++ b/include/linux/shm.h
+@@ -9,7 +9,7 @@
+ struct file;
+ struct task_struct;
+ 
+-#ifdef CONFIG_SYSVIPC
++#if defined(CONFIG_SYSVIPC) && !defined(__BINDGEN__)
+ struct sysv_shm {
+ 	struct list_head shm_clist;
+ };

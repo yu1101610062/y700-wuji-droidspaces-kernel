@@ -1,0 +1,128 @@
+name: Build Droidspaces GKI (android16-6.12-2025-09_r15)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    env:
+      STOCK_IMAGE_URL: https://ci.android.com/builds/submitted/14494108/kernel_aarch64/latest/raw/Image
+      STOCK_IMAGE_SHA256: 38c7a5ad9f694c80ede767f6c61e9c34de05c5b980f69a72cec9930a9b2ba392
+    steps:
+      - name: Checkout build recipe
+        uses: actions/checkout@v4
+        with:
+          path: recipe
+
+      - name: Free disk space
+        run: |
+          df -h / /mnt || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache /usr/local/share/boost /usr/share/swift /usr/lib/jvm \
+            /opt/microsoft /opt/google /usr/local/share/powershell /usr/local/lib/node_modules \
+            /usr/local/share/chromium /opt/az /usr/share/miniconda || true
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          df -h / /mnt || true
+
+      - name: Choose directories
+        run: |
+          root_free=$(df --output=avail -k / | tail -1)
+          mnt_free=$(df --output=avail -k /mnt 2>/dev/null | tail -1 || echo 0)
+          echo "root free: $((root_free/1024/1024)) GiB, /mnt free: $((mnt_free/1024/1024)) GiB"
+          sudo mkdir -p /mnt/kout && sudo chown "$USER" /mnt/kout
+          mkdir -p "$GITHUB_WORKSPACE/src"
+          if [ "${mnt_free:-0}" -gt $((40*1024*1024)) ]; then
+            echo "KOUT=/mnt/kout" >> "$GITHUB_ENV"
+          else
+            mkdir -p "$GITHUB_WORKSPACE/kout"
+            echo "KOUT=$GITHUB_WORKSPACE/kout" >> "$GITHUB_ENV"
+          fi
+          echo "SRC=$GITHUB_WORKSPACE/src" >> "$GITHUB_ENV"
+          echo "DIST=$GITHUB_WORKSPACE/dist" >> "$GITHUB_ENV"
+
+      - name: Install repo
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o "$HOME/bin/repo"
+          chmod +x "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          git config --global user.name "ci"
+          git config --global user.email "ci@localhost"
+          git config --global color.ui false
+
+      - name: Sync pinned GKI manifest (build 14494108)
+        working-directory: ${{ env.SRC }}
+        run: |
+          repo init --depth=1 --no-use-superproject \
+            -u https://android.googlesource.com/kernel/manifest \
+            -b common-android16-6.12-2025-09
+          cp "$GITHUB_WORKSPACE/recipe/manifest/manifest_14494108.xml" .repo/manifests/pinned_14494108.xml
+          repo init --no-use-superproject -m pinned_14494108.xml
+          for i in 1 2 3; do
+            repo sync -c --no-tags --no-clone-bundle --fail-fast -j8 && break
+            echo "repo sync attempt $i failed, retrying"; sleep 30
+          done
+          test "$(git -C common rev-parse HEAD)" = 74ad4605221549423a507537bdd3503ee11d38e2
+          df -h / /mnt || true
+
+      - name: Apply Droidspaces patches
+        working-directory: ${{ env.SRC }}/common
+        run: |
+          for p in "$GITHUB_WORKSPACE"/recipe/patches/*.patch; do
+            echo "== $p"
+            git apply --index --whitespace=nowarn -v "$p"
+          done
+          git diff --cached --stat
+          grep -n "__kabi_ignored_1" include/linux/sched.h
+          cat arch/arm64/configs/droidspaces_defconfig workspace_status.json
+
+      - name: Build //common:kernel_aarch64_dist
+        working-directory: ${{ env.SRC }}
+        run: |
+          tools/bazel --output_root="$KOUT" run \
+            --config=stamp \
+            --jobs="$(nproc)" --make_jobs="$(nproc)" \
+            --defconfig_fragment=//common:arch/arm64/configs/droidspaces_defconfig \
+            //common:kernel_aarch64_dist -- --destdir="$DIST" 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+          ls -la "$DIST"
+          df -h / /mnt || true
+
+      - name: Verify against stock GKI 14494108
+        run: |
+          curl -fsSL "$STOCK_IMAGE_URL" -o "$RUNNER_TEMP/stock_Image"
+          echo "$STOCK_IMAGE_SHA256  $RUNNER_TEMP/stock_Image" | sha256sum -c -
+          status=0
+          python3 recipe/scripts/verify_build.py \
+            --dist "$DIST" \
+            --ref recipe/reference/gki-14494108 \
+            --stock-image "$RUNNER_TEMP/stock_Image" \
+            --cert "$SRC/common/certs/stock_gki_signing_cert.pem" \
+            --report "$DIST/verify-report.md" || status=$?
+          cat "$DIST/verify-report.md" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+      - name: Collect artifacts
+        if: always()
+        run: |
+          mkdir -p out
+          for f in Image kernel_aarch64_dot_config vmlinux.symvers kernel_aarch64_Module.symvers \
+                   System.map verify-report.md; do
+            [ -f "$DIST/$f" ] && cp "$DIST/$f" out/
+          done
+          cp build.log out/ 2>/dev/null || true
+          git -C "$SRC/common" diff --cached > out/applied.diff 2>/dev/null || true
+          (cd out && sha256sum * > SHA256SUMS)
+          ls -la out
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: droidspaces-gki-android16-6.12-r15
+          path: out/
+          retention-days: 30

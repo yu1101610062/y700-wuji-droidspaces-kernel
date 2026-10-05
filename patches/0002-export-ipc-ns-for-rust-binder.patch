@@ -1,0 +1,40 @@
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index c7be0c792..ebaa1db46 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -4,6 +4,7 @@
+  * Copyright (C) 1999, 2004 Manfred Spraul
+  */
+ 
++#include <linux/export.h>
+ #include <linux/spinlock.h>
+ #include <linux/init.h>
+ #include <linux/security.h>
+@@ -33,6 +34,7 @@ struct ipc_namespace init_ipc_ns = {
+ 	.ns.ops = &ipcns_operations,
+ #endif
+ };
++EXPORT_SYMBOL(init_ipc_ns);
+ 
+ struct msg_msgseg {
+ 	struct msg_msgseg *next;
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index 4df91ceee..0bc04384e 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -4,6 +4,7 @@
+  * Copyright (C) 2006 Pavel Emelyanov <xemul@openvz.org> OpenVZ, SWsoft Inc.
+  */
+ 
++#include <linux/export.h>
+ #include <linux/ipc.h>
+ #include <linux/msg.h>
+ #include <linux/ipc_namespace.h>
+@@ -207,6 +208,7 @@ void put_ipc_ns(struct ipc_namespace *ns)
+ 			schedule_work(&free_ipc_work);
+ 	}
+ }
++EXPORT_SYMBOL(put_ipc_ns);
+ 
+ static inline struct ipc_namespace *to_ipc_ns(struct ns_common *ns)
+ {

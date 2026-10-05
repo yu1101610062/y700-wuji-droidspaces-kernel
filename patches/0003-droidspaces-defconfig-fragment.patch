@@ -1,0 +1,73 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index ca86f9ba2..9848f2b52 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -3233,4 +3233,5 @@ pkg_zip(
+ 
+ exports_files([
+     "Makefile",
++    "arch/arm64/configs/droidspaces_defconfig",
+ ])
+diff --git a/arch/arm64/configs/droidspaces_defconfig b/arch/arm64/configs/droidspaces_defconfig
+new file mode 100644
+index 000000000..3d2535bdf
+--- /dev/null
++++ b/arch/arm64/configs/droidspaces_defconfig
+@@ -0,0 +1,11 @@
++# Droidspaces container support for android16-6.12 GKI (post defconfig fragment).
++# Applied with: --defconfig_fragment=//common:arch/arm64/configs/droidspaces_defconfig
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_IPC_NS=y
++CONFIG_PID_NS=y
++CONFIG_USER_NS=y
++CONFIG_DEVTMPFS=y
++# CONFIG_DEVTMPFS_MOUNT is not set
++# Keep trusting the stock GKI build key so stock system_dlkm modules stay sig_ok.
++CONFIG_SYSTEM_TRUSTED_KEYS="certs/stock_gki_signing_cert.pem"
+diff --git a/certs/stock_gki_signing_cert.pem b/certs/stock_gki_signing_cert.pem
+new file mode 100644
+index 000000000..f0fd397ac
+--- /dev/null
++++ b/certs/stock_gki_signing_cert.pem
+@@ -0,0 +1,31 @@
++-----BEGIN CERTIFICATE-----
++MIIFSTCCAzGgAwIBAgIUfwrzeQAi649tLJJDZU66zZc0S8cwDQYJKoZIhvcNAQEF
++BQAwLjEsMCoGA1UEAwwjQnVpbGQgdGltZSBhdXRvZ2VuZXJhdGVkIGtlcm5lbCBr
++ZXkwIBcNMjUxMTI1MTYyNDMxWhgPMjEyNTExMDExNjI0MzFaMC4xLDAqBgNVBAMM
++I0J1aWxkIHRpbWUgYXV0b2dlbmVyYXRlZCBrZXJuZWwga2V5MIICIjANBgkqhkiG
++9w0BAQEFAAOCAg8AMIICCgKCAgEArrD+iDFGyWrl9fdG2bgZZ4/sWnD7N2ukmlNF
++cXH55xvIeHJIKQjX8hZLj4puPxCEFhMvI5C7NNKELLtNx/nUTiOHZBMl5B8GCtd7
++nx/420gl+Rj8EOzqdFWprCZHzETugxa4eu3pIQYCI7ng7lrbLWGt+7czYBccQQw5
++29t9gxpjbHX7aJSxUhYdxR6R2oSsyEJtHgyosYctmbYVmKKNthtVqt0vTd5S/5bO
++XX+X243uBYFjIFgcimyZ+tAAn3mAzG5BU3XhodAwBIOgheytluMIiQSvk0p9Z11k
++bZDeLvVEpRs2o34EicHK+J/1JAmqMQX4xfVERDqPVs8TfzVku0eqAAUuZM0CQRJu
++cN0E883i/3A5BvkBT8P3KWCch9XqKLYHClOF1Ou8c9cyn6myuwSKh/9uMxiRwPQV
++/xdTchAWcW5zvOkOMXfKxXxJybZtSLupUuS1Vb2dZ4wg9TK7lfa1ro+CS+q80qbL
++mB929Xf8kYd1OOjTkfWyNfk66Cd5PmpBb5Nmch25lZLBsq7A7hJ2Hp9E2aZg2Y0h
++b6gxVqGnrX88piQjhc7i5Z4LSlc7cjfnaRbV29vURp+JHc+pC6tfZpBBK9yGznaO
++kONnR4lU5wf4i1YfH3QhQM0IcrRBIaxAQrTRGhIdrg+RVQ3VadbKKH7IlHsiRKSz
++nO/6kwcCAwEAAaNdMFswDAYDVR0TAQH/BAIwADALBgNVHQ8EBAMCB4AwHQYDVR0O
++BBYEFJwHre2OWyhhg0D6iwG10ZmW2dh4MB8GA1UdIwQYMBaAFJwHre2OWyhhg0D6
++iwG10ZmW2dh4MA0GCSqGSIb3DQEBBQUAA4ICAQA7tHMBHeQ6NTqW9TqphvsjhTHA
++SrLCT+5zvi6BzV2757WVt/FgYJssMQyn62E9zmWNBdQXdwWiTFY573YIPihWtezE
++7Rh7dS8rOr5H3PxvqDC0I0gwWKintWUA00TQMyshe1XO74t1bQzJbbEBfFdJo2v8
++T8bDc/AZaQKYzZzQL98NRIHJaOE4Ul7KXEIaIfM46evF4hy836ctfNJoJCB2pmFd
++mx1SFaEjl9ju4EMjLsbP0Hl8IfwT3ws/HhiNeiBpETsCAdreDB5lzR71XSFNrayh
++KZoVuYwIpBRZ/1VQpB+FD+TXKgLyz/3feojBvPZd19327tpZiAPoeaNImAsiDaX1
++ukDGw/PXWm18QdY4AH01rj7je5eTdKNtW55XMYYJas/OZjVANycLgXwDwpKJARyO
++tRmK2K1t5KNFGNsVQc/P/13mfLiO25mqlnYBS8uB7bqEZhF0WUxvQ0gFFM2DMGCr
++3Yzojs/8NQyxmaTPhmg8eEwd8d/xcSYb0tHbFusSqbSdMmK2N7Gmc0b5+uIJ8M4J
++AbYoI2QpiKdOsM4s6czco2Y8kE0xuHYbumgUvqukosdjXYvB3Jjk0jvuJRhMZpOb
++smjMVViHNkUBeO6yztG16AjZ2RvPQmEKKVCYm9igwneP1T6Cl+eCdY9nKnt85Zgv
++/SQUEke6Z1k75iBJqw==
++-----END CERTIFICATE-----
+diff --git a/workspace_status.json b/workspace_status.json
+new file mode 100644
+index 000000000..1467cc067
+--- /dev/null
++++ b/workspace_status.json
+@@ -0,0 +1,3 @@
++{
++    "SCMVERSION": "-g74ad46052215-ab14494108"
++}
