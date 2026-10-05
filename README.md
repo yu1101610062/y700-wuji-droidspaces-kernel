@@ -41,7 +41,7 @@ GitHub Actions（[`build.yml`](.github/workflows/build.yml)）按固定 manifest
 
 ## 使用
 
-本仓库只产出 `Image`，不包含任何设备固件或备份。按以下步骤在本地使用：
+[Releases](../../releases) 提供原始内核 `Image`，以及针对 TB324ZC ZUXOS 2.0.10.262（B 槽）和 2.0.10.223（A 槽）重新打包的可刷入 boot 镜像。boot 镜像只沿用了原厂 boot 的头部字段和 AVB 属性（fingerprint、os_version、security_patch、回滚索引），AVB 算法为 NONE，因此只能用于已解锁 BL 的设备。仓库本身不包含设备固件或分区备份。其他固件版本请按以下步骤自行打包：
 
 1. 从设备拉取全部原厂模块（vendor_boot ramdisk、vendor_dlkm、system_dlkm，以及 init_boot 中的 `kernelsu.ko`），用 `scripts/audit_modules.py` 核对每个导入符号的 CRC 和 vermagic。
 2. 从自己设备当前槽位备份原厂 `boot`，用 `scripts/repack_boot.py` 替换内核，并保留原 AVB 属性和回滚索引。
