@@ -24,6 +24,10 @@
 开启：`SYSVIPC`、`POSIX_MQUEUE`、`IPC_NS`、`PID_NS`、`USER_NS`、`DEVTMPFS`（`DEVTMPFS_MOUNT` 保持关闭）。
 不开：`CGROUP_PIDS`、`CFS_BANDWIDTH`。它们会改调度器 / cgroup 结构体，破坏 KMI。
 
+## 原厂 rust_binder.ko 与 IPC_NS
+
+原厂 system_dlkm 中的 `rust_binder.ko` 在关闭 IPC_NS 的配置下编译，其 binderfs 对 `ipc_ns` 不持有引用，但这个指针在原厂编译产物中从不解引用。此外，在本机上 Rust Binder 只在 `binder.impl=rust` 时接管，设备未设置这个参数，模块加载后在 init 中直接返回。实际使用的是内置在 Image 里的 C binder，它随本内核一起以 IPC_NS=y 编译，因此无需额外处理。`0002` 导出的两个符号只用于让本次构建里的 in-tree rust_binder 通过链接。
+
 ## 构建与校验
 
 GitHub Actions（[`build.yml`](.github/workflows/build.yml)）按固定 manifest 同步源码，用官方 Kleaf 构建 `//common:kernel_aarch64_dist`，然后运行 [`scripts/verify_build.py`](scripts/verify_build.py)，以 Google 的 build 14494108 为基准比对：
