@@ -41,10 +41,16 @@ GitHub Actions（[`build.yml`](.github/workflows/build.yml)）按固定 manifest
 
 ## 使用
 
-[Releases](../../releases) 提供原始内核 `Image`，以及针对 TB324ZC ZUXOS 2.0.10.262（B 槽）和 2.0.10.223（A 槽）重新打包的可刷入 boot 镜像。boot 镜像只沿用了原厂 boot 的头部字段和 AVB 属性（fingerprint、os_version、security_patch、回滚索引），AVB 算法为 NONE，因此只能用于已解锁 BL 的设备。仓库本身不包含设备固件或分区备份。其他固件版本请按以下步骤自行打包：
+[Releases](../../releases) 提供原始内核 `Image`，以及针对 TB324ZC ZUXOS 2.0.10.262（B 槽）和 2.0.10.223（A 槽）重新打包的可刷入 boot 镜像。仓库本身不包含设备固件或分区备份。
+
+> **v1 的 boot 镜像不要用。** v1 重写了 AVB footer，算法为 NONE。在伪回锁设备上，bootloader 报告的是 `verifiedbootstate=green`，一阶段 init（`libfs_avb`）因此以锁定模式校验链式 `boot` 分区的 vbmeta 签名，校验失败后无限重启。`fastboot boot` 不会暴露这个问题，因为它读取的是磁盘上原厂签名的 boot。
+>
+> v2 起，`repack_boot.py` 默认使用 `--avb keep`：原样保留 OEM 签名的 vbmeta，只把它移到新内容之后，并重写不受签名保护的 footer。这和 KernelSU / Magisk 修补 boot 的方式相同。这样签名依然有效，`androidboot.vbmeta.digest` 与原厂一致；只有内容哈希不匹配，而真实解锁的 ABL 会容忍这一点。
+
+其他固件版本请按以下步骤自行打包：
 
 1. 从设备拉取全部原厂模块（vendor_boot ramdisk、vendor_dlkm、system_dlkm，以及 init_boot 中的 `kernelsu.ko`），用 `scripts/audit_modules.py` 核对每个导入符号的 CRC 和 vermagic。
-2. 从自己设备当前槽位备份原厂 `boot`，用 `scripts/repack_boot.py` 替换内核，并保留原 AVB 属性和回滚索引。
+2. 从自己设备的每个槽位备份原厂 `boot`，用 `scripts/repack_boot.py`（默认 `--avb keep`）替换内核。每个槽位要用各自的原厂 boot 打包，因为 fingerprint 不同。
 3. 先 `fastboot boot new-boot.img` 临时启动验证，确认模块全部加载、Wi‑Fi/蓝牙正常、`droidspaces check` 通过后再考虑刷写。
 4. `init_boot`（KernelSU LKM）无需改动。每次 OTA 都会覆盖 boot，需要按新版本的 GKI tag 重新构建。
 
