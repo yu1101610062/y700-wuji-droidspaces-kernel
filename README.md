@@ -38,8 +38,9 @@ GitHub Actions（[`build.yml`](.github/workflows/build.yml)）按固定 manifest
 
 本仓库只产出 `Image`，不包含任何设备固件或备份。按以下步骤在本地使用：
 
-1. 从自己设备当前槽位备份原厂 `boot`，用 `scripts/repack_boot.py` 替换内核，并保留原 AVB 属性。
-2. 先 `fastboot boot new-boot.img` 临时启动验证，确认模块全部加载、Wi‑Fi/蓝牙正常、`droidspaces check` 通过后再考虑刷写。
-3. `init_boot`（KernelSU LKM）无需改动。每次 OTA 都会覆盖 boot，需要按新版本的 GKI tag 重新构建。
+1. 从设备拉取全部原厂模块（vendor_boot ramdisk、vendor_dlkm、system_dlkm，以及 init_boot 中的 `kernelsu.ko`），用 `scripts/audit_modules.py` 核对每个导入符号的 CRC 和 vermagic。
+2. 从自己设备当前槽位备份原厂 `boot`，用 `scripts/repack_boot.py` 替换内核，并保留原 AVB 属性和回滚索引。
+3. 先 `fastboot boot new-boot.img` 临时启动验证，确认模块全部加载、Wi‑Fi/蓝牙正常、`droidspaces check` 通过后再考虑刷写。
+4. `init_boot`（KernelSU LKM）无需改动。每次 OTA 都会覆盖 boot，需要按新版本的 GKI tag 重新构建。
 
 仅适用于运行同一 GKI build（14494108）的设备。风险自负。
