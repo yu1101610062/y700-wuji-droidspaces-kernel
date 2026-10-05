@@ -1,0 +1,36 @@
+diff --git a/gki/aarch64/symbols/lenovo b/gki/aarch64/symbols/lenovo
+index 07c2eb002..b06a4827c 100644
+--- a/gki/aarch64/symbols/lenovo
++++ b/gki/aarch64/symbols/lenovo
+@@ -2181,3 +2181,5 @@
+   wireless_send_event
+   xa_find
+   xa_find_after
++# required by stock system_dlkm rust_binder.ko on a USER_NS=y kernel (Droidspaces)
++  rust_helper_from_kuid
+diff --git a/rust/helpers/task.c b/rust/helpers/task.c
+index 5874032b3..d0e8a3f3e 100644
+--- a/rust/helpers/task.c
++++ b/rust/helpers/task.c
+@@ -28,12 +28,19 @@ kuid_t rust_helper_task_euid(struct task_struct *task)
+ 	return task_euid(task);
+ }
+ 
+-#ifndef CONFIG_USER_NS
++/*
++ * Droidspaces: with CONFIG_USER_NS=y from_kuid() is a real function, but the
++ * stock system_dlkm rust_binder.ko (built with USER_NS=n) still imports this
++ * helper. Keep exporting it from the same compilation unit so its CRC matches
++ * the stock KMI, and hide it from bindgen only when USER_NS is on so the
++ * Rust bindings do not get a duplicate from_kuid().
++ */
++#if !defined(CONFIG_USER_NS) || !defined(__BINDGEN__)
+ uid_t rust_helper_from_kuid(struct user_namespace *to, kuid_t uid)
+ {
+ 	return from_kuid(to, uid);
+ }
+-#endif /* CONFIG_USER_NS */
++#endif
+ 
+ bool rust_helper_uid_eq(kuid_t left, kuid_t right)
+ {

@@ -20,6 +20,7 @@
 | `0001` | `sysvsem`/`sysvshm` 放进 `task_struct` 中 `rt_priority`（结束于 164）与 64 字节对齐的 `se`（192）之间 28 字节空洞，使用 `__packed` + `__kabi_ignored`，任何原有成员偏移不变，gendwarfksyms CRC 不变；对 bindgen 隐藏，原厂 `rust_binder.ko` 的 Rust KMI 不变。思路来自 Droidspaces-OSS 的 GKI 6.12 补丁和 [droidspaces-xiaomi-17-kernel](https://github.com/2824799/droidspaces-xiaomi-17-kernel)。 |
 | `0002` | 导出 `init_ipc_ns`、`put_ipc_ns`，供开启 IPC_NS 后编译期的 in-tree rust_binder 链接。 |
 | `0003` | `droidspaces_defconfig` 片段通过 `--defconfig_fragment` 叠加（不改 `gki_defconfig`，`minimized` 检查照常通过）；把原厂 GKI 模块签名证书加入 `CONFIG_SYSTEM_TRUSTED_KEYS`，原厂 system_dlkm 模块继续视为已签名；`workspace_status.json` 固定 SCMVERSION，使 uname 与原厂一致。 |
+| `0004` | 开启 USER_NS 后 `from_kuid()` 不再是内联函数，`rust_helper_from_kuid` 会被条件编译掉，但原厂 `rust_binder.ko` 仍导入它（CRC `0x143d1b29`）。补丁让它留在原编译单元中（只对 bindgen 隐藏），并加入 `symbols/lenovo` 以免被裁剪。 |
 
 开启：`SYSVIPC`、`POSIX_MQUEUE`、`IPC_NS`、`PID_NS`、`USER_NS`、`DEVTMPFS`（`DEVTMPFS_MOUNT` 保持关闭）。
 不开：`CGROUP_PIDS`、`CFS_BANDWIDTH`。它们会改调度器 / cgroup 结构体，破坏 KMI。

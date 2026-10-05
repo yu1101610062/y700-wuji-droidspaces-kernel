@@ -94,8 +94,12 @@ class BTF:
             return f"{self.type_name(t['elem'], depth)}[{t['nelems']}]"
         if k in (KIND_STRUCT, KIND_UNION) and not t["name"] and depth < 8:
             return self.layout(tid, depth + 1)
+        if k == KIND_FWD:
+            # A forward declaration and the full definition name the same
+            # type; which one BTF records depends on which CUs got compiled.
+            return ("union " if t["kflag"] else "struct ") + t["name"]
         prefix = {KIND_STRUCT: "struct ", KIND_UNION: "union ", KIND_ENUM: "enum ",
-                  KIND_ENUM64: "enum ", KIND_FWD: "fwd "}.get(k, "")
+                  KIND_ENUM64: "enum "}.get(k, "")
         return prefix + (t["name"] or f"<anon kind {k}>")
 
     def layout(self, tid: int, depth: int = 0) -> str:

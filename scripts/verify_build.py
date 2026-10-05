@@ -42,7 +42,10 @@ EXPECTED_CONFIG = {
 # packed SYSVIPC fields rely on plain (non-LDAR) READ_ONCE, i.e. no LTO.
 PINNED_CONFIG = {"CONFIG_LTO_NONE": "y", "CONFIG_GENDWARFKSYMS": "y", "CONFIG_MODVERSIONS": "y"}
 
-EXPECTED_NEW_EXPORTS = {"init_ipc_ns", "put_ipc_ns"}
+# init_ipc_ns/put_ipc_ns: patch 0002. The uid/gid mappers become real (no
+# longer inline) functions with USER_NS=y and in-tree GKI modules import them.
+EXPECTED_NEW_EXPORTS = {"init_ipc_ns", "put_ipc_ns", "from_kgid", "from_kgid_munged",
+                        "from_kuid", "from_kuid_munged", "make_kgid", "make_kuid"}
 
 # task_struct: two anonymous packed unions in the 164..192 hole.
 EXPECTED_TASK_STRUCT_ADDED = [(164 * 8, 8), (172 * 8, 16)]
